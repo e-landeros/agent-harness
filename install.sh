@@ -16,7 +16,7 @@ AGENTS_HOME="${AGENTS_HOME:-$HOME/.agents}"
 SKILLS_DST="$AGENTS_HOME/skills"
 REFS_DST="$AGENTS_HOME/references"
 PERSONAS_DST="$AGENTS_HOME/agents"
-MANIFEST="$AGENTS_HOME/.installed-by-agent-harness"
+MANIFEST="$AGENTS_HOME/.installed-by-gauntlet"
 
 PI_HOME="${PI_HOME:-$HOME/.pi/agent}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
@@ -165,7 +165,7 @@ install_claude() {
   fi
 }
 
-say "agent-harness $VERSION"
+say "gauntlet $VERSION"
 
 if [ "$DO_CHECK" -eq 1 ]; then check_repo; exit $?; fi
 if [ "$DO_UNINSTALL" -eq 1 ]; then uninstall; exit 0; fi

@@ -133,18 +133,9 @@ to `~/.agents/references/`.
 
 ## Editing this file
 
-This file is versioned in `agent-harness`. Edit the repo copy and run
+This file is versioned in `gauntlet`. Edit the repo copy and run
 `./install.sh` — do not edit the installed copies in `~/.pi`, `~/.codex`, or
 `~/.claude`, because the next install will overwrite them.
 
 Personal overrides belong in the **Local overrides** section at the bottom, so
 they survive edits to the routing table.
-
----
-
-## Local overrides
-
-<!-- Add machine-specific or personal rules here. Keep them additive: a local
-     override should never delete a hard rule above, only narrow or extend it. -->
-
-- None yet.
