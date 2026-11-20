@@ -1,40 +1,36 @@
-# agent-skills-personal
+# agent-harness
 
-A personal instruction set for AI coding agents — 26 skills, 5 personas, and 10
-command definitions — installed into the cross-harness Agent Skills location
-`~/.agents/skills/`.
+My agent instruction set: 26 skills, 5 personas and 10 command definitions,
+installed into the cross-harness Agent Skills location `~/.agents/skills/`.
 
-This started from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
-and is now maintained independently: no upstream tracking, no submodules, no
-sync script. What is here is the set.
+It is the configuration I actually run on my machine — Pi, Codex and Claude Code
+all read from it. Publishing it so the setup is inspectable and reusable, not so
+it is a library you have to adopt wholesale.
 
 ## Install
 
 ```bash
-git clone <this-repo> ~/Documents/Personal/agent-skills-personal
-cd ~/Documents/Personal/agent-skills-personal
+git clone https://github.com/e-landeros/agent-harness.git
+cd agent-harness
 ./install.sh --dry-run     # see exactly what will change
 ./install.sh               # skills + references + personas + global router
 ```
 
-Optional targets:
+To also expose the skills to Claude Code, which does not read `~/.agents/skills`:
 
 ```bash
-./install.sh --claude      # link skills into ~/.claude/skills
-./install.sh --hermes      # enable skills.external_dirs in ~/.hermes/config.yaml
-./install.sh --all         # everything
+./install.sh --claude
 ```
 
-Other flags: `--no-router` (skills only), `--force` (overwrite global
-instruction files without a backup), `--check` (validate the repo), `--uninstall`.
+Other flags: `--no-router` (skills only), `--force` (overwrite global instruction
+files without a backup), `--check` (validate the repo), `--uninstall`.
 
-The installer is bash + `cp`/`rsync`/`sed`. No network access, no package
+The installer is bash plus `cp`/`rsync`/`sed`. No network access, no package
 manager, no npm.
 
-## Drop-in only (no installer)
+## Drop-in only
 
-The skills are plain markdown and work without running anything. If you just
-want them available:
+The skills are plain markdown and work without running anything:
 
 ```bash
 mkdir -p ~/.agents
@@ -42,18 +38,13 @@ cp -R skills references agents ~/.agents/
 chmod +x ~/.agents/skills/*/scripts/*.sh 2>/dev/null
 ```
 
-**You must copy `references/` alongside `skills/`.** Twelve skills link to
+**Copy `references/` alongside `skills/`.** Twelve skills link to
 `../../references/<file>.md`, which resolves to `~/.agents/references/` from an
 installed skill. Skills without it have dead links.
 
-What you give up by skipping the installer:
-
-- the global router (`AGENTS.md`) — skills are discoverable, but nothing
-  enforces the mandatory hops or the lifecycle
-- the Claude Code link (`~/.claude/skills`) — Claude Code does not read
-  `~/.agents/skills`
-- the Hermes `external_dirs` entry — Hermes only reads `~/.agents/skills` when
-  configured to
+Skipping the installer costs you three things: the global router (`AGENTS.md`),
+so skills are discoverable but nothing enforces when to use them; the Claude Code
+link; and the manifest that makes `--uninstall` clean.
 
 ## Verify
 
@@ -62,7 +53,6 @@ What you give up by skipping the installer:
 | Pi | `/skill:using-agent-skills` |
 | Codex | `$using-agent-skills` |
 | Claude Code | `/skill:using-agent-skills` (needs `--claude`) |
-| Hermes | `hermes skills list` (needs `--hermes`) |
 | Copilot / Cursor / VS Code | skills appear in the agent's skill list |
 
 ## Why `~/.agents/skills/`
@@ -71,7 +61,6 @@ What you give up by skipping the installer:
 |---|---|---|
 | Pi | yes, native | documented Agent Skills location |
 | Codex | yes, recommended | `~/.codex/skills` is the legacy path |
-| Hermes | yes, via config | `skills.external_dirs` |
 | GitHub Copilot | yes | personal skills |
 | Cursor | yes | user-level |
 | VS Code | yes | documented |
@@ -80,15 +69,20 @@ What you give up by skipping the installer:
 ## Layout
 
 ```text
-AGENTS.md            global router installed as ~/.pi/agent/AGENTS.md,
-                     ~/.codex/AGENTS.md, ~/.claude/CLAUDE.md
+AGENTS.md            global router, installed as ~/.pi/agent/AGENTS.md,
+                     ~/.codex/AGENTS.md and ~/.claude/CLAUDE.md
 install.sh           installer
-VERSION              repo version
-skills/              26 skills (SKILL.md + per-skill references/ and scripts/)
+VERSION
+skills/              26 skills (SKILL.md plus per-skill references/ and scripts/)
 agents/              5 personas
 commands/            10 command definitions (.toml, Gemini/Antigravity format)
 references/          7 shared checklists that skills cite via ../../references/
 ```
+
+The router is not stored in `~/.agents/`, because no harness reads
+`~/.agents/AGENTS.md` — the only thing `~/.agents` is scanned for is `skills/`.
+Each harness has its own global instruction path, so the router is written to
+each of those instead.
 
 ## Portability
 
@@ -96,18 +90,14 @@ Every `SKILL.md` and persona carries only `name` and `description` frontmatter �
 no `allowed-tools`, no `compatibility`, no harness metadata. Discovery is
 filesystem-based, so the tree works anywhere the standard is implemented.
 
-Four skills degrade without harness features they assume:
+Four skills assume harness features and degrade without them:
 
 | Skill | Assumes | Without it |
 |---|---|---|
 | `idea-refine` | `AskUserQuestion` tool | agent improvises the interview, or stalls |
 | `test-driven-development` | subagent spawning | reproduces the bug inline instead |
-| `doubt-driven-development` | fresh subagent context | adversarial pass happens in the same context |
+| `doubt-driven-development` | fresh subagent context | adversarial pass runs in the same context |
 | `browser-testing-with-devtools` | Chrome DevTools MCP | loads, then has no tools to call |
-
-`test-driven-development` also collides with Hermes' bundled skill of the same
-name. Hermes gives local skills precedence, so the bundled one wins there. Rename
-this copy or remove the Hermes one if you want the version in this repo.
 
 ## Editing
 
@@ -120,8 +110,10 @@ the next install overwrites them.
   frontmatter matching the directory, add a routing row to `AGENTS.md`, run
   `./install.sh --check`.
 
-## License
+## Credit
 
-Skills, personas, references and commands began as Copyright (c) 2025 Addy
-Osmani under the MIT license; see `LICENSE`. The router, installer, and README
-are Copyright (c) 2026 Fabian Landeros, also MIT.
+The skills, personas, references and commands began as
+[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills), Copyright
+(c) 2025 Addy Osmani, MIT. This repo is maintained independently — no upstream
+tracking, no sync script. The router, installer and documentation are mine,
+MIT. See `LICENSE`.

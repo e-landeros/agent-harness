@@ -128,13 +128,12 @@ to `~/.agents/references/`.
 - Pi: `/skill:<name>`
 - Codex: `$<name>`
 - Claude Code: `/skill:<name>` (skills are installed to `~/.claude/skills/` too)
-- Hermes: `hermes skills list` (needs `skills.external_dirs: ["~/.agents/skills"]` in `~/.hermes/config.yaml`)
 
 ---
 
 ## Editing this file
 
-This file is versioned in `agent-skills-personal`. Edit the repo copy and run
+This file is versioned in `agent-harness`. Edit the repo copy and run
 `./install.sh` — do not edit the installed copies in `~/.pi`, `~/.codex`, or
 `~/.claude`, because the next install will overwrite them.
 

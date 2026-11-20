@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Install the agent-skills-personal instruction set on this machine.
+# Install this instruction set on the local machine.
 #
-# Canonical target: ~/.agents/skills/  (the cross-harness Agent Skills location
-# read by Pi, Codex, Copilot, Cursor, VS Code, Hermes via external_dirs).
-#
-# Claude Code does not read ~/.agents/skills/, so --claude links it in.
-# Hermes reads it only when enabled in ~/.hermes/config.yaml, so --hermes does that.
+# Canonical target: ~/.agents/skills/ — the cross-harness Agent Skills location
+# read by Pi, Codex, Copilot, Cursor and VS Code. Claude Code does not read it,
+# so --claude links the same tree into ~/.claude/skills.
 #
 # No dependencies beyond bash, cp, rsync, sed. Nothing is fetched from the network.
 
@@ -18,15 +16,13 @@ AGENTS_HOME="${AGENTS_HOME:-$HOME/.agents}"
 SKILLS_DST="$AGENTS_HOME/skills"
 REFS_DST="$AGENTS_HOME/references"
 PERSONAS_DST="$AGENTS_HOME/agents"
-MANIFEST="$AGENTS_HOME/.installed-by-agent-skills-personal"
+MANIFEST="$AGENTS_HOME/.installed-by-agent-harness"
 
 PI_HOME="${PI_HOME:-$HOME/.pi/agent}"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 CLAUDE_HOME="${CLAUDE_HOME:-$HOME/.claude}"
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
 
 DO_CLAUDE=0
-DO_HERMES=0
 DO_ROUTER=1
 DO_UNINSTALL=0
 DO_CHECK=0
@@ -34,15 +30,12 @@ DRY_RUN=0
 FORCE=0
 
 usage() {
-  sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
   cat <<'EOF'
-
 Usage: ./install.sh [options]
 
   (no options)     install skills, references, personas and the global router
-  --all            same, plus --claude and --hermes
   --claude         also expose the skills to Claude Code (~/.claude/skills)
-  --hermes         also enable ~/.agents/skills in ~/.hermes/config.yaml
+  --all            same as --claude
   --no-router      install skills only; leave global instruction files alone
   --force          overwrite global instruction files without keeping a backup
   --dry-run        print every action, change nothing
@@ -63,9 +56,7 @@ run() {
 
 for arg in "$@"; do
   case "$arg" in
-    --all) DO_CLAUDE=1; DO_HERMES=1 ;;
-    --claude) DO_CLAUDE=1 ;;
-    --hermes) DO_HERMES=1 ;;
+    --all|--claude) DO_CLAUDE=1 ;;
     --no-router) DO_ROUTER=0 ;;
     --force) FORCE=1 ;;
     --dry-run) DRY_RUN=1 ;;
@@ -127,17 +118,6 @@ uninstall() {
       say "  removed $f (was ours, no backup existed)"
     fi
   done
-  cfg="$HERMES_HOME/config.yaml"
-  if [ -f "$cfg" ] && grep -q '^  external_dirs:' "$cfg"; then
-    if awk '/^  external_dirs:/{f=1;next} f&&/^    - /{n++;next} f&&!/^    - /{f=0} END{exit !(n==1)}' "$cfg" \
-       && grep -q '^    - ~/\.agents/skills$' "$cfg"; then
-      run sed -i '' -e 's/^  external_dirs:$/  # external_dirs:/' \
-                      -e 's|^    - ~/.agents/skills$|  #   - ~/.agents/skills|' "$cfg"
-      say "  reverted $cfg (external_dirs commented again)"
-    else
-      say "  $cfg has additional external_dirs entries — remove ~/.agents/skills manually"
-    fi
-  fi
 }
 
 # ---------------------------------------------------------------- install
@@ -185,39 +165,7 @@ install_claude() {
   fi
 }
 
-install_hermes() {
-  say "Enabling external skills dir for Hermes"
-  cfg="$HERMES_HOME/config.yaml"
-  if [ ! -f "$cfg" ]; then
-    say "  $cfg not found — skipping"
-    return
-  fi
-  if grep -q '^  external_dirs:' "$cfg"; then
-    if grep -q '^  external_dirs:' -A5 "$cfg" | grep -q '\.agents/skills'; then
-      say "  already configured"
-    else
-      say "  external_dirs exists without ~/.agents/skills — add it manually:"
-      say "    skills.external_dirs: [~/.agents/skills]"
-    fi
-    return
-  fi
-  if grep -q '^  # external_dirs:' "$cfg"; then
-    if [ "$DRY_RUN" -eq 1 ]; then
-      say "  [dry-run] uncomment external_dirs in $cfg"
-    else
-      cp "$cfg" "$cfg.bak.$(date -u +%Y%m%dT%H%M%SZ)"
-      sed -i '' -e 's/^  # external_dirs:$/  external_dirs:/' \
-                -e 's|^  #   - ~/.agents/skills$|    - ~/.agents/skills|' "$cfg"
-      say "  enabled skills.external_dirs in $cfg (backup kept)"
-    fi
-  else
-    say "  no external_dirs key found — add this under skills:"
-    say "    external_dirs:"
-    say "      - ~/.agents/skills"
-  fi
-}
-
-say "agent-skills-personal $VERSION"
+say "agent-harness $VERSION"
 
 if [ "$DO_CHECK" -eq 1 ]; then check_repo; exit $?; fi
 if [ "$DO_UNINSTALL" -eq 1 ]; then uninstall; exit 0; fi
@@ -225,11 +173,9 @@ if [ "$DO_UNINSTALL" -eq 1 ]; then uninstall; exit 0; fi
 install_skills
 if [ "$DO_ROUTER" -eq 1 ]; then install_router; fi
 if [ "$DO_CLAUDE" -eq 1 ]; then install_claude; fi
-if [ "$DO_HERMES" -eq 1 ]; then install_hermes; fi
 
 say ""
 say "Done. Verify with:"
 say "  Pi:     /skill:using-agent-skills"
 say "  Codex:  \$using-agent-skills"
 say "  Claude: /skill:using-agent-skills"
-say "  Hermes: hermes skills list"
