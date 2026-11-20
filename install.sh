@@ -127,6 +127,17 @@ uninstall() {
       say "  removed $f (was ours, no backup existed)"
     fi
   done
+  cfg="$HERMES_HOME/config.yaml"
+  if [ -f "$cfg" ] && grep -q '^  external_dirs:' "$cfg"; then
+    if awk '/^  external_dirs:/{f=1;next} f&&/^    - /{n++;next} f&&!/^    - /{f=0} END{exit !(n==1)}' "$cfg" \
+       && grep -q '^    - ~/\.agents/skills$' "$cfg"; then
+      run sed -i '' -e 's/^  external_dirs:$/  # external_dirs:/' \
+                      -e 's|^    - ~/.agents/skills$|  #   - ~/.agents/skills|' "$cfg"
+      say "  reverted $cfg (external_dirs commented again)"
+    else
+      say "  $cfg has additional external_dirs entries — remove ~/.agents/skills manually"
+    fi
+  fi
 }
 
 # ---------------------------------------------------------------- install
