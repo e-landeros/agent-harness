@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/addyosmani/agent-skills",
+    "ref": "main",
+    "commit": "8c99fa36d90068c82d547f7c12a9d67a3e95f4ee",
+    "version": "0.6.17",
+    "committedAt": "2026-11-18T12:06:37-08:00"
+  },
+  "vendored": [
+    "skills/",
+    "agents/",
+    "commands/",
+    "references/"
+  ],
+  "notVendored": [
+    "evals/",
+    "docs/",
+    "hooks/",
+    "scripts/",
+    ".claude/",
+    ".gemini/",
+    ".agents/",
+    ".opencode/"
+  ],
+  "localChanges": [
+    "AGENTS.md — written for this repo, not copied from upstream",
+    "install.sh — installer for ~/.agents/skills",
+    "README.md — usage and compatibility notes"
+  ],
+  "syncedAt": "2026-11-20"
+}
