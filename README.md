@@ -42,7 +42,7 @@ cp -R skills references agents ~/.agents/
 chmod +x ~/.agents/skills/*/scripts/*.sh 2>/dev/null
 ```
 
-**You must copy `references/` alongside `skills/`.** Eight skills link to
+**You must copy `references/` alongside `skills/`.** Twelve skills link to
 `../../references/<file>.md`, which resolves to `~/.agents/references/` from an
 installed skill. Skills without it have dead links.
 
