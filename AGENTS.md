@@ -139,7 +139,7 @@ This file is versioned in `agent-skills-personal`. Edit the repo copy and run
 `~/.claude`, because the next install will overwrite them.
 
 Personal overrides belong in the **Local overrides** section at the bottom, so
-they survive upstream syncs of the routing table.
+they survive edits to the routing table.
 
 ---
 

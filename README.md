@@ -1,16 +1,12 @@
 # agent-skills-personal
 
-A personal, versioned copy of [Addy Osmani's agent-skills](https://github.com/addyosmani/agent-skills)
-— 26 skills, 5 personas, and 10 command definitions — plus a global router and a
-one-command installer for macOS.
+A personal instruction set for AI coding agents — 26 skills, 5 personas, and 10
+command definitions — installed into the cross-harness Agent Skills location
+`~/.agents/skills/`.
 
-**Canonical install target: `~/.agents/skills/`** — the cross-harness Agent
-Skills location. Installed once, read by every agent on the machine that
-supports the standard.
-
-This repo exists so the instruction set is **one editable source of truth**
-instead of three drifting copies (an npm package, an upstream clone, and
-whatever the agents had cached).
+This started from [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)
+and is now maintained independently: no upstream tracking, no submodules, no
+sync script. What is here is the set.
 
 ## Install
 
@@ -35,35 +31,51 @@ instruction files without a backup), `--check` (validate the repo), `--uninstall
 The installer is bash + `cp`/`rsync`/`sed`. No network access, no package
 manager, no npm.
 
-## Verify it loaded
+## Drop-in only (no installer)
+
+The skills are plain markdown and work without running anything. If you just
+want them available:
+
+```bash
+mkdir -p ~/.agents
+cp -R skills references agents ~/.agents/
+chmod +x ~/.agents/skills/*/scripts/*.sh 2>/dev/null
+```
+
+**You must copy `references/` alongside `skills/`.** Eight skills link to
+`../../references/<file>.md`, which resolves to `~/.agents/references/` from an
+installed skill. Skills without it have dead links.
+
+What you give up by skipping the installer:
+
+- the global router (`AGENTS.md`) — skills are discoverable, but nothing
+  enforces the mandatory hops or the lifecycle
+- the Claude Code link (`~/.claude/skills`) — Claude Code does not read
+  `~/.agents/skills`
+- the Hermes `external_dirs` entry — Hermes only reads `~/.agents/skills` when
+  configured to
+
+## Verify
 
 | Harness | Check |
 |---|---|
 | Pi | `/skill:using-agent-skills` |
 | Codex | `$using-agent-skills` |
-| Claude Code | `/skill:using-agent-skills` |
-| Hermes | `hermes skills list` (after `--hermes`) |
+| Claude Code | `/skill:using-agent-skills` (needs `--claude`) |
+| Hermes | `hermes skills list` (needs `--hermes`) |
 | Copilot / Cursor / VS Code | skills appear in the agent's skill list |
-
-If a skill does not appear, check that `~/.agents/skills/<name>/SKILL.md` exists
-and that its frontmatter has a `description`.
 
 ## Why `~/.agents/skills/`
 
-Verified against current documentation at build time:
-
-| Harness | Reads `~/.agents/skills/` | Source |
+| Harness | Reads `~/.agents/skills/` | Note |
 |---|---|---|
-| Pi | yes, native | Pi `docs/skills.md`: "Pi also supports the Agent Skills locations `~/.agents/skills/` and `.agents/skills/`" |
-| Codex | yes, recommended | OpenAI Codex `docs/skills.md`; `~/.codex/skills` is the legacy path |
-| Hermes | yes, via config | Hermes `docs/user-guide/features/skills.md`: external dirs, `~/.agents/skills` |
-| GitHub Copilot | yes | Copilot docs: personal skills in `~/.copilot/skills` or `~/.agents/skills` |
-| Cursor | yes | Cursor docs: `~/.agents/skills/` is user-level |
-| VS Code | yes | `agentskills.io` quickstart: VS Code reads `.agents/skills/` |
-| Claude Code | **no** | Claude Code reads only `~/.claude/skills/` — hence `--claude` |
-
-`~/.agents/skills/` is where the ecosystem is converging; per-harness directories
-are the legacy path. Claude Code is the one holdout that needs a link.
+| Pi | yes, native | documented Agent Skills location |
+| Codex | yes, recommended | `~/.codex/skills` is the legacy path |
+| Hermes | yes, via config | `skills.external_dirs` |
+| GitHub Copilot | yes | personal skills |
+| Cursor | yes | user-level |
+| VS Code | yes | documented |
+| Claude Code | **no** | only `~/.claude/skills/` — hence `--claude` |
 
 ## Layout
 
@@ -71,59 +83,45 @@ are the legacy path. Claude Code is the one holdout that needs a link.
 AGENTS.md            global router installed as ~/.pi/agent/AGENTS.md,
                      ~/.codex/AGENTS.md, ~/.claude/CLAUDE.md
 install.sh           installer
-VERSION              this repo's version
-upstream.lock.json   exact upstream commit and what was vendored
+VERSION              repo version
 skills/              26 skills (SKILL.md + per-skill references/ and scripts/)
 agents/              5 personas
 commands/            10 command definitions (.toml, Gemini/Antigravity format)
 references/          7 shared checklists that skills cite via ../../references/
 ```
 
-**Path note:** several skills link to `../../references/<file>.md`. Installed at
-`~/.agents/skills/<name>/`, that resolves to `~/.agents/references/`, which is
-why the installer copies `references/` there as well. Moving skills without
-`references/` silently breaks those links.
+## Portability
+
+Every `SKILL.md` and persona carries only `name` and `description` frontmatter —
+no `allowed-tools`, no `compatibility`, no harness metadata. Discovery is
+filesystem-based, so the tree works anywhere the standard is implemented.
+
+Four skills degrade without harness features they assume:
+
+| Skill | Assumes | Without it |
+|---|---|---|
+| `idea-refine` | `AskUserQuestion` tool | agent improvises the interview, or stalls |
+| `test-driven-development` | subagent spawning | reproduces the bug inline instead |
+| `doubt-driven-development` | fresh subagent context | adversarial pass happens in the same context |
+| `browser-testing-with-devtools` | Chrome DevTools MCP | loads, then has no tools to call |
+
+`test-driven-development` also collides with Hermes' bundled skill of the same
+name. Hermes gives local skills precedence, so the bundled one wins there. Rename
+this copy or remove the Hermes one if you want the version in this repo.
 
 ## Editing
 
 Edit the repo, then re-run `./install.sh`. Do not edit the installed copies —
 the next install overwrites them.
 
-- **Router rules** → `AGENTS.md`. Personal rules go in the *Local overrides*
-  section so they survive upstream syncs.
-- **A skill's procedure** → `skills/<name>/SKILL.md`. If you diverge from
-  upstream, record it in `upstream.lock.json` under `localChanges`.
-- **Add your own skill** → create `skills/<kebab-name>/SKILL.md` with `name` and
-  `description` frontmatter, add a routing row to `AGENTS.md`, run `./install.sh
-  --check`.
-
-## Updating from upstream
-
-```bash
-git clone https://github.com/addyosmani/agent-skills /tmp/agent-skills-upstream
-cd /tmp/agent-skills-upstream && git checkout <commit>
-rsync -a --delete /tmp/agent-skills-upstream/skills/ ~/Documents/Personal/agent-skills-personal/skills/
-rsync -a --delete /tmp/agent-skills-upstream/references/ ~/Documents/Personal/agent-skills-personal/references/
-rsync -a --delete /tmp/agent-skills-upstream/agents/ ~/Documents/Personal/agent-skills-personal/agents/
-rsync -a --delete /tmp/agent-skills-upstream/commands/ ~/Documents/Personal/agent-skills-personal/commands/
-```
-
-Then update `upstream.lock.json`, run `./install.sh --check`, commit. Review the
-diff before installing: an upstream skill can change behavior in ways that
-affect every agent on the machine.
-
-## Not included
-
-- `hooks/` — the Claude hook scripts (`simplify-ignore.sh`, `session-start.sh`,
-  `sdd-cache-*.sh`). Harness-specific and require a Pi extension to run; not
-  needed for the instructions to work.
-- `evals/`, `docs/`, `scripts/` — upstream's own test and documentation
-  machinery, irrelevant to consumption.
-- `.claude/`, `.gemini/`, `.agents/`, `.opencode/` plugin manifests — the
-  installer replaces the need for them.
+- **Router rules** → `AGENTS.md`. Personal rules go in *Local overrides*.
+- **A skill's procedure** → `skills/<name>/SKILL.md`.
+- **Add a skill** → `skills/<kebab-name>/SKILL.md` with `name` and `description`
+  frontmatter matching the directory, add a routing row to `AGENTS.md`, run
+  `./install.sh --check`.
 
 ## License
 
-Skills, personas, references and commands are Copyright (c) 2025 Addy Osmani,
-MIT licensed. The original license is preserved at `LICENSE`. The router,
-installer, and README are original to this repo, also MIT. See `NOTICE`.
+Skills, personas, references and commands began as Copyright (c) 2025 Addy
+Osmani under the MIT license; see `LICENSE`. The router, installer, and README
+are Copyright (c) 2026 Fabian Landeros, also MIT.
